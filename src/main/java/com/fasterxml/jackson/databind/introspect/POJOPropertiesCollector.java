@@ -907,7 +907,18 @@ public class POJOPropertiesCollector
                 }
                 // otherwise just remove ones marked to be ignored
                 prop.removeIgnored();
-                if (!prop.couldDeserialize()) {
+                // [databind#5967]: non-visible fields (kept only for INFER_PROPERTY_MUTATORS)
+                // do not count as mutators here, so check field visibility explicitly
+                if (!prop.couldDeserializeWithVisibleFields()) {
+                    // [databind#5967]: Strip inferred non-visible field mutators to preserve
+                    // @JsonIgnore semantics: since no visible mutators remain, any remaining
+                    // fields are non-visible (kept only for INFER_PROPERTY_MUTATORS) and must
+                    // not be used to bypass the ignored setter.
+                    // But only for deserialization: for serialization fields are needed
+                    // for merging annotations (like @JsonInclude) into getter
+                    if (!_forSerialization) {
+                        prop.removeFields();
+                    }
                     _collectIgnorals(prop.getName());
                 }
             }

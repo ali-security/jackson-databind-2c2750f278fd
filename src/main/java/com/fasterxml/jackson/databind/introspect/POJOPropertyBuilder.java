@@ -967,7 +967,16 @@ public class POJOPropertyBuilder
     public void removeConstructors() {
         _ctorParameters = null;
     }
-    
+
+    /**
+     * Mutator that will simply drop any fields property may have.
+     *
+     * @since 2.18.12
+     */
+    public void removeFields() {
+        _fields = null;
+    }
+
     /**
      * Method called to trim unnecessary entries, such as implicit
      * getter if there is an explict one available. This is important
@@ -1109,6 +1118,22 @@ public class POJOPropertyBuilder
             || _anyVisible(_setters)
             || _anyVisible(_ctorParameters)
         ;
+    }
+
+    /**
+     * Method similar to {@link #couldDeserialize()}, except that fields only
+     * count if at least one of them is visible: non-visible fields may only be
+     * retained to support {@link MapperFeature#INFER_PROPERTY_MUTATORS}, and
+     * must not be considered actual mutators when determining whether a property
+     * whose ignored accessors were removed could still be deserialized
+     * (see [databind#5967]).
+     *
+     * @since 2.18.12
+     */
+    public boolean couldDeserializeWithVisibleFields() {
+        return (_ctorParameters != null)
+            || (_setters != null)
+            || ((_fields != null) && _anyVisible(_fields));
     }
 
     private <T> boolean _anyVisible(Linked<T> n)
